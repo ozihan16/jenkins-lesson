@@ -51,8 +51,8 @@ pipeline {
                 sh 'terraform apply --auto-approve'
                 script {
                     echo 'Waiting for Leader Manager'
-                    id = sh(script: 'aws ec2 describe-instances --filters Name=tag-value,Values=docker-grand-master Name=instance-state-name,Values=running --query Reservations[*].Instances[*].[InstanceId] --output text',  returnStdout:true).trim()
-                    sh 'aws ec2 wait instance-status-ok --instance-ids $id'
+                    env.MASTER_INSTANCE_ID = sh(script: 'aws ec2 describe-instances --filters Name=tag-value,Values=docker-grand-master Name=instance-state-name,Values=running --query Reservations[*].Instances[*].[InstanceId] --output text',  returnStdout:true).trim()
+                    sh 'aws ec2 wait instance-status-ok --instance-ids ${MASTER_INSTANCE_ID}'
 
                     echo 'Leader manager is running'
                     mid = sh(script: 'aws ec2 describe-instances --filters Name=tag-value,Values=docker-manager-2 Name=instance-state-name,Values=running --query Reservations[*].Instances[*].[InstanceId] --output text',  returnStdout:true).trim()
@@ -87,9 +87,7 @@ pipeline {
          }
 
         stage('Deploy App on Docker Swarm'){
-            environment {
-                MASTER_INSTANCE_ID=sh(script:'aws ec2 describe-instances --region ${AWS_REGION} --filters Name=tag-value,Values=docker-grand-master Name=instance-state-name,Values=running --query Reservations[*].Instances[*].[InstanceId] --output text', returnStdout:true).trim()
-            }
+
             steps {
 
                 echo "Cloning and Deploying App on Swarm using Grand Master with Instance Id: $MASTER_INSTANCE_ID"
